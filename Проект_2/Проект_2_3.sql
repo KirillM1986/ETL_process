@@ -16,7 +16,7 @@ WITH prev_day_balance AS (
         effective_date,
 		account_in_sum,
 		account_out_sum,
-        COALESCE(LAG(account_out_sum) OVER (PARTITION BY account_rk ORDER BY effective_date), 0) AS prev_account_out_sum
+        LAG(account_out_sum, 1, 0) OVER (PARTITION BY account_rk ORDER BY effective_date) AS prev_account_out_sum
     FROM rd.account_balance
 )
 
@@ -42,8 +42,9 @@ WITH next_day_balance AS (
         effective_date,
 		account_in_sum,
 		account_out_sum,
-        LEAD(account_in_sum) OVER (PARTITION BY account_rk ORDER BY effective_date) AS next_account_in_sum
+        LEAD(account_in_sum, 1, account_out_sum) OVER (PARTITION BY account_rk ORDER BY effective_date) AS next_account_in_sum
     FROM rd.account_balance
+
 )
 
 SELECT pdb.account_rk,
@@ -54,7 +55,7 @@ SELECT pdb.account_rk,
 			ELSE pdb.account_out_sum 
 		END AS account_out_sum	
 FROM next_day_balance pdb
-WHERE pdb.account_rk = '2007640'   
+--WHERE pdb.account_rk = '2007640'   
 
 
 /* 
@@ -96,12 +97,12 @@ BEGIN
 	DELETE FROM dm.account_balance_turnover;
 
 	INSERT INTO dm.account_balance_turnover(account_rk, currency_name, department_rk, effective_date, account_in_sum, account_out_sum)
-	SELECT a.account_rk,
+	SELECT a.account_rk AS account_rk,
 	   COALESCE(dc.currency_name, '-1'::TEXT) AS currency_name,
-	   a.department_rk,
-	   ab.effective_date,
-	   ab.account_in_sum,
-	   ab.account_out_sum
+	   a.department_rk AS department_rk,
+	   ab.effective_date AS effective_date,
+	   ab.account_in_sum AS account_in_sum,
+	   ab.account_out_sum AS account_out_sum
 FROM rd.account a
 LEFT JOIN rd.account_balance ab ON a.account_rk = ab.account_rk
 LEFT JOIN dm.dict_currency dc ON a.currency_cd = dc.currency_cd;
@@ -121,4 +122,5 @@ CALL reload_account_balance_turnover();
 
 -- проверка результата
 SELECT * FROM dm.account_balance_turnover
+
 ORDER BY account_rk, effective_date
