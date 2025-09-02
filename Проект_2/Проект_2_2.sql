@@ -7,13 +7,16 @@
 В файле product.csv предоставлены данные за все даты. Т.к. объем данных не значительный - выполняется полная перезагрузка таблицы
 */
 SELECT DISTINCT effective_from_date, effective_to_date
-FROM dm.loan_holiday_info;
-SELECT DISTINCT effective_from_date, effective_to_date
-FROM rd.deal_info;
-SELECT DISTINCT effective_from_date, effective_to_date
-FROM rd.loan_holiday;
+FROM rd.loan_holiday
+EXCEPT
 SELECT DISTINCT effective_from_date, effective_to_date
 FROM rd.product;
+
+SELECT DISTINCT effective_from_date, effective_to_date
+FROM rd.loan_holiday
+EXCEPT
+SELECT DISTINCT effective_from_date, effective_to_date
+FROM rd.deal_info;
 
 
 CREATE OR REPLACE PROCEDURE load_loan_holiday_info() AS $$
@@ -134,3 +137,4 @@ $$ LANGUAGE plpgsql
 
 
 CALL load_loan_holiday_info();
+
